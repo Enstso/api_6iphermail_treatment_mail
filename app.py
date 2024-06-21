@@ -46,6 +46,8 @@ def treating_mail():
     if javascript:
         score += 10
 
+    decoded_html = remove_html_tags(decoded_html)
+
     decoded_html+=str(score)
 
     if score >= 7:
@@ -66,6 +68,13 @@ def extract_text_from_html(html_content):
     soup = BeautifulSoup(html_content, 'html.parser')
     return soup.get_text()
 
+
+def remove_html_tags(html_content):
+    soup = BeautifulSoup(html_content, 'html.parser')
+    # Remove <!DOCTYPE> and <html> tags
+    for element in soup(['!doctype', 'html']):
+        element.extract()
+    return str(soup)
 
 def check_typography(text):
     is_typo_present = False
