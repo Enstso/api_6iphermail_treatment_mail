@@ -14,11 +14,16 @@ from spellchecker import SpellChecker
 
 app = Flask(__name__)
 
+# Routes
+# Route to treat the mail
 @app.route('/treating_mail', methods=['POST'])
+# Function to treat the mail
 def treating_mail():
+    # Get the data from the request
     data = request.json
     base64_text = data['base64_text']
     decoded_html = decode_base64(replace_characters(base64_text))
+    # Check if the mail is not empty
     if decoded_html == 'An error occurred. Please contact your mail provider.':
         return jsonify({'content': 'An error occurred. Please contact your mail provider.','score':-1}), 200
     
@@ -32,7 +37,6 @@ def treating_mail():
     if urls_in_text == 'An error occurred. Please contact your mail provider.':
         return jsonify({'content': 'An error occurred. Please contact your mail provider.','score':-1}), 200
     
-    print(f"URLs in text: {urls_in_text}")
     res = {}
     typo_errors = check_typography(text)
     
@@ -52,18 +56,25 @@ def treating_mail():
     
     if javascript == 'An error occurred. Please contact your mail provider.':
         return jsonify({'content': 'An error occurred. Please contact your mail provider.','score':-1}), 200    
+    
     https = check_https(urls_in_text)
     
     if https == 'An error occurred. Please contact your mail provider.':
         return jsonify({'content': 'An error occurred. Please contact your mail provider.','score':-1}), 200    
+    
     domains_url = is_domain_in_json(urls_in_text)
+    
     if domains_url == 'An error occurred. Please contact your mail provider.':
         return jsonify({'content': 'An error occurred. Please contact your mail provider.','score':-1}), 200    
     domain_text = text_is_domain_in_json(text)
+    
     if domain_text == 'An error occurred. Please contact your mail provider.':
         return jsonify({'content': 'An error occurred. Please contact your mail provider.','score':-1}), 200
-    score = 0
     
+    score = 0
+
+    # scoring
+
     if typo_errors:
         score += 1
     if num_spelling_errors > 0:
@@ -81,7 +92,6 @@ def treating_mail():
     if javascript:
         score += 10
 
-    print(f"Final score: {score}")
     res['score'] = score
     res['content'] = decoded_html
     if score >= 8:
@@ -92,8 +102,9 @@ def treating_mail():
     return jsonify(res), 200
 
    
+# func to remove tags a
 
-def retirer_balises_a(html):
+def remove_tags_a(html):
     try:
         soup = BeautifulSoup(html, 'html.parser')
         for a_tag in soup.find_all('a'):
@@ -107,6 +118,8 @@ def retirer_balises_a(html):
     except Exception as e:
         return f"Une erreur est survenue: {str(e)}"
 
+# func to decode base64
+
 def decode_base64(base64_text):
     try:
         base64_bytes = base64_text.encode('utf-8')
@@ -116,18 +129,21 @@ def decode_base64(base64_text):
     except (Exception) as e:
         return 'An error occurred. Please contact your mail provider.'
 
+# func to extract text from html
+
 def extract_text_from_html(html_content):
     try:
         soup = BeautifulSoup(html_content, 'html.parser')
         return soup.get_text()
     except Exception as e:
         return 'An error occurred. Please contact your mail provider.'
-    
+
+# func to check typography    
 
 def check_typography(text):
     try:
         is_typo_present = False
-        # Règles de typographie de base
+        # Rules for basic typography
         rules = {
             'double_space': r'  ',
             'space_before_punctuation': r' [,.!?;:](?=\w)',
@@ -135,7 +151,7 @@ def check_typography(text):
             'no_space_after_quote': r'(?<=["\'])\S'
         }
 
-        # Vérification des erreurs typographiques
+        # Verify if there are typographical errors
         for pattern in rules.values():
             matches = re.findall(pattern, text)
             if matches:
@@ -144,6 +160,8 @@ def check_typography(text):
         return is_typo_present
     except Exception as e:
         return 'An error occurred. Please contact your mail provider.'
+
+# func to check https
 
 def check_https(urls):
     try:
@@ -155,6 +173,8 @@ def check_https(urls):
     except Exception as e:
         return 'An error occurred. Please contact your mail provider.'
 
+# func to check url redirect
+
 def check_url_redirect(urls):
     try:
         for url in urls:
@@ -165,6 +185,8 @@ def check_url_redirect(urls):
         return False
     return False
 
+# func to load json file
+
 def load_json_file(file_path):
     try:
         with open(file_path, 'r', encoding='utf-8') as file:
@@ -172,6 +194,8 @@ def load_json_file(file_path):
         return data
     except Exception as e:
         return 'An error occurred. Please contact your mail provider.'
+
+# func to check if domain is in json
 
 def is_domain_in_json(urls):
     try:
@@ -186,6 +210,8 @@ def is_domain_in_json(urls):
         return False
     except Exception as e:
         return 'An error occurred. Please contact your mail provider.'
+
+# func to check if text is domain in json
 
 def text_is_domain_in_json(mail):
     try:
@@ -202,6 +228,8 @@ def text_is_domain_in_json(mail):
     except Exception as e:
         return 'An error occurred. Please contact your mail provider.'
 
+# func to check suspect text
+
 def check_suspect_text(text):
     try:
         suspect_count = 0
@@ -214,6 +242,8 @@ def check_suspect_text(text):
     except Exception as e:
         return 'An error occurred. Please contact your mail provider.'
 
+# func to find urls
+
 def find_urls(text):
     try:
         pattern = r'https?://(?:[-\w.]|(?:%[\da-fA-F]{2}))+'
@@ -221,6 +251,8 @@ def find_urls(text):
         return urls
     except Exception as e:
         return 'An error occurred. Please contact your mail provider.'
+
+# func to check script tags    
     
 def check_script_tags(html):
     try:
@@ -234,6 +266,8 @@ def check_script_tags(html):
     except Exception as e:
         return 'An error occurred. Please contact your mail provider.'
 
+# func to count spelling errors
+
 def count_spelling_errors(text):
     try:
         language = detect(text)
@@ -244,6 +278,8 @@ def count_spelling_errors(text):
         return num_errors
     except Exception as e:
         return 'An error occurred. Please contact your mail provider.'
+
+# func to replace characters
 
 def replace_characters(string):
     try:
